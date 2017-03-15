@@ -8,11 +8,13 @@ relative strength using tournament.py and include the results in your report.
 """
 import random
 
+DEBUG = False
+
 class Timeout(Exception):
     """Subclass base exception for code clarity."""
     pass
 
-def custom_score(game, player):
+def custom_score(game, player, scoretype=1):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
     Calculates a quick heuristic, inaccurate but allows for deep searches
@@ -47,19 +49,54 @@ def custom_score(game, player):
     # calculate #opponent moves
     opp_moves = len(game.get_legal_moves(game.get_opponent(player))) / (game.width * game.height)
 
-    # but a stronger emphasis on restricting opponents movement
-    return player_moves - 2 * opp_moves
 
+
+    if scoretype == 2:
+        # calculate a simple heurisitic that is quick to compute and allows for deep searches during early game
+        # start with the simplest heuristic, #moves
+        player_moves =  len(game.get_legal_moves(player))
+
+        # calculate #opponent moves
+        opp_moves = len(game.get_legal_moves(game.get_opponent(player)))
+
+        return player_moves - 2 * opp_moves
+
+
+    elif scoretype == 3:
+        # try to stay away from the opponent
+        heuristic = sum([abs(a-b) for a,b in zip(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))]) / (game.width * game.height)
+
+        return player_moves - 2 * opp_moves + heuristic
+
+
+    elif scoretype == 4:
+        # penalise borders of the board
+        heuristic = sum([abs(a-b) for a,b in zip(game.get_player_location(player), ((game.height-1)/2, (game.width-1)/2))]) / (game.width * game.height)
+
+        return player_moves - 2 * opp_moves - heuristic
+
+
+    # but a stronger emphasis on restricting opponents movement
+    if scoretype == 0:
+        return player_moves - opp_moves
+    elif scoretype == 1:
+        return player_moves - 2 * opp_moves
+
+
+
+    # return heuristic based on #moves available, good for early game since it's quick but inaccurate
+    # heuristic = player_moves
+    # heuristic = player_moves - opp_moves
+    # heuristic = player_moves - 2 * opp_moves
+
+    # penalise borders of the board
+    # heuristic = 1 - sum([abs(a-b) for a,b in zip(game.get_player_location(player), ((game.height-1)/2, (game.width-1)/2))]) / (game.width * game.height)
 
     # try to stay away from the opponent
     # heuristic = sum([abs(a-b) for a,b in zip(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))]) / (game.width * game.height)
 
-    # penalise borders of the board
-    # heuristic = sum([abs(a-b) for a,b in zip(game.get_player_location(player), ((game.height-1)/2, (game.width-1)/2))]) / (game.width * game.height)
 
-
-
-def custom_score_late(game, player, startgame, time_left, TIMER_THRESHOLD):
+def custom_score_late(game, player, startgame, time_left, TIMER_THRESHOLD, scoretype=1):
     """Calculate the heuristic value of a game state from the point of view
     of the given player.
     A more cost-intensive heuristic, limits search depth but useful during later game stages.
@@ -82,6 +119,18 @@ def custom_score_late(game, player, startgame, time_left, TIMER_THRESHOLD):
     float
         The heuristic value of the current game state to the specified player.
     """
+
+    # if scoretype == 0: return custom_score(game, player, scoretype)
+
+
+    if scoretype == 6:
+        # calculate the available space for the player (every board position that can be reached)
+        # more cost intensive than #moves, maybe good for midgame
+        player_space, player_list = calculate_space(game, player)
+        opp_space, opp_list = calculate_space(game, game.get_opponent(player))
+        return  player_space - opp_space
+
+
 
     # check if the game is won or lost
     if game.is_loser(player): return float("-inf")
@@ -121,8 +170,25 @@ def custom_score_late(game, player, startgame, time_left, TIMER_THRESHOLD):
         return player_chain - opp_chain
 
     # return the early game heuristic if board cannot be divided
-    return custom_score(game, player)
+    return custom_score(game, player, scoretype)
 
+"""
+            if DEBUG:
+            print("island")
+            print("rows: ", rowcount)
+            print(playerpos, opppos)
+            print("hwall: ", hwall, "vwall: ", vwall)
+            print(game.to_string())
+            print("player: ", player_chain, " opp: ", opp_chain)
+            if game.active_player == player: print("player active")
+            else: print("opp active")
+
+        # the player who has more moves available wins
+        # or the player who is not active if they have the same
+        if player_chain > opp_chain: return float("inf")
+        elif player_chain < opp_chain: return float("-inf")
+        elif game.active_player == player: return float("-inf")
+        else: return float("inf")"""
 
 def get_chain_length(game, player, time_left, TIMER_THRESHOLD):
     """Calculate the longest chain of moves. If the players are separated, the player with more available moves wins.
@@ -158,6 +224,46 @@ def get_chain_length(game, player, time_left, TIMER_THRESHOLD):
     return max_moves
 
 
+def calculate_space(game, player):
+    """Calculate the board positions that can be reached in the future. If the players are separated, the player with more available moves wins.
+
+    Parameters
+    ----------
+    game : `isolation.Board`
+        An instance of `isolation.Board` encoding the current state of the
+        game (e.g., player locations and blocked cells).
+
+    player : object
+        A player instance in the current game (i.e., an object corresponding to
+        one of the player objects `game.__player_1__` or `game.__player_2__`.)
+
+    Returns
+    -------
+    float
+        The heuristic value of the current game state to the specified player.
+    """
+
+    # get moves available to player
+    movelist = []
+    movelist = get_moves(game, player, movelist)
+
+    return len(movelist), movelist
+
+def get_moves(game, player, movelist):
+
+    legal_moves = game.get_legal_moves(player)
+    if not legal_moves: return movelist
+
+    for move in legal_moves:
+        if move not in movelist:
+            movelist.append(move)
+            new_game = game.forecast_move(move)
+            movelist = get_moves(new_game, player, movelist)
+    return movelist
+
+
+
+
 class CustomPlayer:
     """Game-playing agent that chooses a move using your evaluation function
     and a depth-limited minimax algorithm with alpha-beta pruning. You must
@@ -189,7 +295,7 @@ class CustomPlayer:
     """
 
     def __init__(self, search_depth=3, score_fn=custom_score,
-                 iterative=True, method='minimax', timeout=10.):
+                 iterative=True, method='minimax', timeout=10., scoretype=1):
         self.search_depth = search_depth
         self.iterative = iterative
         self.score = score_fn
@@ -202,7 +308,7 @@ class CustomPlayer:
         self.nextscore = 0
         self.currentgame = []
         self.depth = 0
-        self.depthlist = []
+        self.scoretype = scoretype
 
 
     def get_move(self, game, legal_moves, time_left):
@@ -262,6 +368,10 @@ class CustomPlayer:
         # assign a move in case non-iterative minimax or alphabeta times out
         best_move = legal_moves[0]
 
+        if DEBUG and self.score == custom_score:
+            print(game.to_string())
+            print(legal_moves)
+
         try:
             if self.iterative:
                 best_score, best_move = self.iterative_deepening(game, self.method)
@@ -276,11 +386,12 @@ class CustomPlayer:
             best_move = self.nextmove
             best_score = self.nextscore
 
+        if DEBUG and self.score == custom_score:
+            print("Depth: ", self.depth, best_move, best_score)
+        # if self.depth != 0: print(len(game.get_blank_spaces()),":",self.depth, end=" , ")
+
         # if it looks like the player loses, assign any move that's available
         if best_score == float("-inf"): best_move = legal_moves[0]
-
-        # keep track of iterative depth reached
-        if self.iterative: self.depthlist.append(self.depth)
 
         # Return the best move from the last completed search iteration
         return best_move
@@ -288,7 +399,6 @@ class CustomPlayer:
 
     def find_opening(self, game):
         """Decide how to open the game.
-        This is not really used at the moment, placeholder in case more opening strategies are used in the future.
 
         Parameters
         ----------
@@ -353,7 +463,6 @@ class CustomPlayer:
         self.depth = current_depth
         return self.nextscore, self.nextmove
 
-
     def minimax(self, game, depth, maximizing_player=True):
         """Implement the minimax search algorithm as described in the lectures.
 
@@ -401,10 +510,10 @@ class CustomPlayer:
             if self.score == custom_score:
                 if len(self.currentgame.get_blank_spaces()) <= (self.currentgame.width * self.currentgame.height)*3/4:
                     try:
-                        return self.score_late(game, self.currentgame.active_player, self.currentgame, self.time_left, self.TIMER_THRESHOLD), (-1, -1)
+                        return self.score_late(game, self.currentgame.active_player, self.currentgame, self.time_left, self.TIMER_THRESHOLD, self.scoretype), (-1, -1)
                     except Timeout:
                         raise Timeout()
-                return self.score(game, self.currentgame.active_player), (-1, -1)
+                return self.score(game, self.currentgame.active_player, self.scoretype), (-1, -1)
             return self.score(game, self.currentgame.active_player), (-1, -1)
 
         best_move = legal_moves[0]
@@ -493,10 +602,10 @@ class CustomPlayer:
             if self.score == custom_score:
                 if len(self.currentgame.get_blank_spaces()) <= (self.currentgame.width * self.currentgame.height)*3/4:
                     try:
-                        return self.score_late(game, self.currentgame.active_player, self.currentgame, self.time_left, self.TIMER_THRESHOLD), (-1, -1)
+                        return self.score_late(game, self.currentgame.active_player, self.currentgame, self.time_left, self.TIMER_THRESHOLD, self.scoretype), (-1, -1)
                     except Timeout:
                         raise Timeout()
-                return self.score(game, self.currentgame.active_player), (-1, -1)
+                return self.score(game, self.currentgame.active_player, self.scoretype), (-1, -1)
             return self.score(game, self.currentgame.active_player), (-1, -1)
 
         best_move = legal_moves[0]

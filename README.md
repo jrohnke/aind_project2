@@ -1,105 +1,97 @@
 
 # Build a Game-playing Agent
 
-## Synopsis
+In this project I implemented the minimax and alpha-beta algorithm and a custom heuristic score to develop an AI agent that plays the game Isolation (using a move-set like the knight in chess) and ideally outperforms the agent using the given benchmark heuristic.
 
-In this project, students will develop an adversarial search agent to play the game "Isolation".  Students only need to modify code in the `game_agent.py`, however, code is included for example player and evaluation functions for you to review and test against in the other files.
+## Heuristics
 
-Isolation is a deterministic, two-player game of perfect information in which the players alternate turns moving a single piece from one cell to another on a board.  Whenever either player occupies a cell, that cell becomes blocked for the remainder of the game.  The first player with no remaining legal moves loses, and the opponent is declared the winner.
+To test the functionality of the minimax and alpha-beta algorithm, I started by implementing an extremely simple heuristic, the **#moves** available to the player. Since this heuristic points in the right direction but is overly simplified (e.g. it completely ignores the opponent), I initially modified it to take the #moves available to the opponent into account (**#moves - #opponent_moves**). This way the algorithms maximise the number of moves available to the player and minimise the moves available to the opponent. I tried to modify this further and put a stronger emphasis on restricting the opponents ability to move, leading me to the first of my final set of implemented heuristic:
 
-This project uses a version of Isolation where each agent is restricted to L-shaped movements (like a knight in chess) on a rectangular grid (like a chess or checkerboard).  The agents can move to any open cell on the board that is 2-rows and 1-column or 2-columns and 1-row away from their current position on the board. Movements are blocked at the edges of the board (the board does not wrap around), however, the player can "jump" blocked or occupied spaces (just like a knight in chess).
+**Heuristic1 = #player_moves - 2*#opponent_moves**
+<pre>player_moves =  len(game.get_legal_moves(player)) / (game.width * game.height)
+opp_moves = len(game.get_legal_moves(game.get_opponent(player))) / (game.width * game.height)
+heuristic1 = player_moves - 2 * opp_moves
+</pre>
 
-Additionally, agents will have a fixed time limit each turn to search for the best move and respond.  If the time limit expires during a player's turn, that player forfeits the match, and the opponent wins.
+Next, I tried to penalise certain areas of the board to achieve the same goal of maximising the freedom of movement of the player. The positions on the board where the movement is restricted the most (or where it is easiest to restrict the movement in the future) is close to the border of the board, and close to the opponent. This lead me to the next two heuristic that will be used in the final set:
 
-These rules are implemented in the `isolation.Board` class provided in the repository. 
+**Heuristic2 = player_location - opponent_location**
+<pre> heuristic2 = sum([abs(a-b) for a,b in zip(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))]) / (game.width * game.height) </pre>
 
+**Heuristic3 = player_location - board_center**
+<pre> heuristic3 = sum([abs(a-b) for a,b in zip(game.get_player_location(player), ((game.height-1)/2, (game.width-1)/2))]) / (game.width * game.height) </pre>
 
-## Quickstart Guide
-
-The following example creates a game and illustrates the basic API. You can run this example with `python sample_players.py`
-
-    from isolation import Board
-
-    # create an isolation board (by default 7x7)
-    player1 = RandomPlayer()
-    player2 = GreedyPlayer()
-    game = Board(player1, player2)
-
-    # place player 1 on the board at row 2, column 3, then place player 2 on
-    # the board at row 0, column 5; display the resulting board state.  Note
-    # that .apply_move() changes the calling object
-    game.apply_move((2, 3))
-    game.apply_move((0, 5))
-    print(game.to_string())
-
-    # players take turns moving on the board, so player1 should be next to move
-    assert(player1 == game.active_player)
-
-    # get a list of the legal moves available to the active player
-    print(game.get_legal_moves())
-
-    # get a successor of the current state by making a copy of the board and
-    # applying a move. Notice that this does NOT change the calling object
-    # (unlike .apply_move()).
-    new_game = game.forecast_move((1, 1))
-    assert(new_game.to_string() != game.to_string())
-    print("\nOld state:\n{}".format(game.to_string()))
-    print("\nNew state:\n{}".format(new_game.to_string()))
-
-    # play the remainder of the game automatically -- outcome can be "illegal
-    # move" or "timeout"; it should _always_ be "illegal move" in this example
-    winner, history, outcome = game.play()
-    print("\nWinner: {}\nOutcome: {}".format(winner, outcome))
-    print(game.to_string())
-    print("Move history:\n{!s}".format(history))
+As can be seen, I normalised all of these heuristics by the size of the board. This scales them to a similar range and generally makes it easier to choose and vary the individual weights when combining different heuristics.
 
 
-## Instructions
+The next step to look at a more complicated heuristics that is computationally more demanding but should be more accurate. It is not feasible to use this throughout the whole game, as it would restrict the search depth in the early stages of the game too much. I ended up using this late-game heuristics when less than 3/4 of the game board is still open.
 
-Implement the following four functions in `game_agent.py`:
+The first part of this heuristic is to check if the game board is divided into two parts. To keep it easy to compute, I decided to restrict this to a simple chec: Are there two adjacent rows or columns that are completely blocked and are the two players on opposite sides of the wall.
+<pre># check if two adjacent rows or columns are completely blocked off
+    rows, cols = zip(*blanks)
+    rowcount = [rows.count(x) for x in range(game.height)]
+    colscount = [cols.count(x) for x in range(game.width)]
+    try:
+        hwall = [sum(x) for x in zip(rowcount[:-1], rowcount[1:])].index(0)
+    except:
+        hwall = False
+    try:
+        vwall = [sum(x) for x in zip(colscount[:-1], colscount[1:])].index(0)
+    except:
+        vwall = False
+    # if there is a wall, check if players are on opposite sides of it (not on it)
+    if (hwall and ((playerpos[0] < hwall < opppos[0]-1) or (opppos[0] < hwall < playerpos[0]-1))) or (vwall and ((playerpos[1] < vwall < opppos[1]-1) or (opppos[1] < vwall < playerpos[1]-1))):</pre>
+    
+If this condition is fulfilled, it is safe to assume, that the players cannot interfere with each other. Because of this, the player with the longest chain of moves available, will win the game.
+<pre>def get_chain_length(game, player, time_left, TIMER_THRESHOLD):
+    max_moves = 0
+    if time_left() < TIMER_THRESHOLD:
+        raise Timeout()
+    legal_moves = game.get_legal_moves(player)
+    if not legal_moves: return 1
+    for move in legal_moves:
+        nmoves = 1
+        new_game = game.forecast_move(move)
+        new_game.__active_player__ = player
+        nmoves += get_chain_length(new_game, player, time_left, TIMER_THRESHOLD)
+        if nmoves > max_moves: max_moves = nmoves
+    return max_moves</pre>
 
-- `CustomPlayer.minimax()`: implement minimax search
-- `CustomPlayer.alphabeta()`: implement minimax search with alpha-beta pruning
-- `CustomPlayer.get_move()`: implement fixed-depth and iterative deepening search
-- `custom_score()`: implement your own position evaluation heuristic
-
-You may write or modify code within each file (as long as you maintain compatibility with the function signatures provided) and you may add other classes, functions, etc., as needed, but it is not required.  
-
-
-### Coding
-
-The steps below outline one suggested process for completing the project -- however, this is just a suggestion to help you get started.  Unit tests can be executed by running `python agent_test.py -v`.  (See the [unittest](https://docs.python.org/3/library/unittest.html#basic-example) module for details.)
-
-0. Pass the test_get_move_interface and test_minimax_interface unit tests by implementing a fixed-depth call to minimax in `CustomPlayer.get_move()` and implementing a single-level search in `CustomPlayer.minimax()` (the interface checks only tests depth=1)
-
-0. Pass the test_minimax test by extending your `CustomPlayer.minimax()` function with the full recursive search process.  See Also: [AIMA Minimax Decision](https://github.com/aimacode/aima-pseudocode/blob/master/md/Minimax-Decision.md)
-
-0. Pass the test_alphabeta_interface test by copying the code from `CustomPlayer.minimax()` into the `CustomPlayer.alphabeta()` function.
-
-0. Pass the test_alphabeta test by extending your `CustomPlayer.alphabeta()` function to include alpha and beta pruning.  See Also: [AIMA Alpha-Beta Search](https://github.com/aimacode/aima-pseudocode/blob/master/md/Alpha-Beta-Search.md)
-
-0. Pass the test_get_move test by extending your fixed-depth call in `CustomPlayer.get_move()` to implement Iterative Deepening.  See Also [AIMA Iterative Deepening Search](https://github.com/aimacode/aima-pseudocode/blob/master/md/Iterative-Deepening-Search.md)
-
-0. Finally, pass the test_heuristic test by implementing any heuristic in `custom_score()`.  (This test only validates the return value type -- it does not check for "correctness" of your heuristic.)  You can see example heuristics in the `sample_players.py` file.
-
-
-### Tournament
-
-The `tournament.py` script is used to evaluate the effectiveness of your custom_score heuristic.  The script measures relative performance of your agent (called "Student") in a round-robin tournament against several other pre-defined agents.  The Student agent uses time-limited Iterative Deepening and the custom_score heuristic you wrote.
-
-The performance of time-limited iterative deepening search is hardware dependent (faster hardware is expected to search deeper than slower hardware in the same amount of time).  The script controls for these effects by also measuring the baseline performance of an agent called "ID_Improved" that uess Iterative Deepening and the improved_score heuristic from `sample_players.py`.  Your goal is to develop a heuristic such that Student outperforms ID_Improved.
-
-The tournament opponents are listed below. (See also: sample heuristics and players defined in sample_players.py)
-
-- Random: An agent that randomly chooses a move each turn.
-- MM_Null: CustomPlayer agent using fixed-depth minimax search and the null_score heuristic
-- MM_Open: CustomPlayer agent using fixed-depth minimax search and the open_move_score heuristic
-- MM_Improved: CustomPlayer agent using fixed-depth minimax search and the improved_score heuristic
-- AB_Null: CustomPlayer agent using fixed-depth alpha-beta search and the null_score heuristic
-- AB_Open: CustomPlayer agent using fixed-depth alpha-beta search and the open_move_score heuristic
-- AB_Improved: CustomPlayer agent using fixed-depth alpha-beta search and the improved_score heuristic
+**Heuristic4 = length_move_chain**
 
 
-## Submitting
+## Tournament test
+I ran a few short tournaments to find a combination of heuristics that seem to give encouraging results. Using the heuristics above, I used the following combinations for the three short (num_matches = 5) and two long tournaments (num_matches = 100):
+- Just Heuristic1
+- Heuristic1 and Heuristic4 (after 1/4 of the board has been filled)
+- Heuristic1 + Heuristic2 and Heuristic4 (after 1/4 of the board has been filled)
+- Heuristic 1 - Heuristic3 and Heuristic4 (after 1/4 of the board has been filled)
 
-Your project is ready for submission when it meets all requirements of the project rubric.  Your code is finished when it passes all unit tests, and you have successfully implemented a suitable heuristic function.
+These are the results:
+
+|Heuristic \	#matches|	5|	5|	5|	100|	100|	Combined
+|---|
+Improved_ID|	72.86%|	70.00%|	77.14%|	76.50%|	76.04%|	76.07%
+#moves_player - 2 * #moves_opp|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45%
+Heuristic 1 + late_game_length_move_chain|	71.43%|	80.71%|	77.14%|	76.07%|	76.89%|	76.48%
+Heuristic 2 + (player_location - opp_location)|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43%
+Heuristic 2 + (player_location - board_center)|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06%
+
+It looks like contradictory to the results from the initial short tournaments, putting a stronger emphasis on restricting the opponents movement does not improve the results compared to Improved_ID. Adding the late-game heuristic does improve the results, which is as expected. In later stages of the game, the board movement is more restricted and the extra computational effort does not reduce the maximum search depth as much as it would've done in early stages of the game. Adding the extra constraints about board positioning does not seem to change the results much and even has a slight negative effect.
+
+Based on these result, I ran another tournament (num_matches = 100) but modified the simple heuristic, so that it is identical to the Improved_ID.
+
+|Heuristic \	#matches|	100
+|---|
+Improved_ID|	74.68%
+#moves_player - #moves_opp + late_game_length_move_chain|	74.46%
+#moves_player - 2 * #moves_opp + late_game_length_move_chain|	76.00%
+
+These results do not look as expected. The average search depth reached using the Improved_ID heuristic is ~7.1, which drops to ~6.7 when any of the other two are being used. It seems like the heuristics all have a similar performance, where a shallower search depth is balanced by a more accurate heuristic. The length of the tournament might not be enough to give a completely reliable order of the heuristics though. 
+The heuristic of my choice is **#moves_player - 2 * #moves_opp + late_game_length_move_chain**. It slightly outperforms the Improved_ID heuristic in most tests and delivers a fairly consistent performance.
+
+
+## Additional Sources:
+https://en.wikipedia.org/wiki/Minimax
+https://en.wikipedia.org/wiki/Alpha–beta_pruning
+

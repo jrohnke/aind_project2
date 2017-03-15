@@ -34,7 +34,7 @@ from game_agent import CustomPlayer
 from game_agent import custom_score
 
 NUM_MATCHES = 5  # number of matches against each opponent
-TIME_LIMIT = 150  # number of milliseconds before timeout
+TIME_LIMIT = 2000  # number of milliseconds before timeout
 
 TIMEOUT_WARNING = "One or more agents lost a match this round due to " + \
                   "timeout. The get_move() function must return before " + \
@@ -57,7 +57,7 @@ same opponents.
 Agent = namedtuple("Agent", ["player", "name"])
 
 
-def play_match(player1, player2, depth):
+def play_match(player1, player2):
     """
     Play a "fair" set of matches between two agents by playing two games
     between the players, forcing each agent to play from randomly selected
@@ -67,7 +67,7 @@ def play_match(player1, player2, depth):
     num_wins = {player1: 0, player2: 0}
     num_timeouts = {player1: 0, player2: 0}
     num_invalid_moves = {player1: 0, player2: 0}
-    games = [Board(player1, player2), Board(player2, player1)]
+    games = [Board(player1, player2, 6, 6), Board(player2, player1, 6, 6)]
 
     # initialize both games with a random move and response
     for _ in range(2):
@@ -75,15 +75,26 @@ def play_match(player1, player2, depth):
         games[0].apply_move(move)
         games[1].apply_move(move)
 
+    print("")
+    """
+    for _ in range(10):
+        if (games[0].active_player == player1): print("Player 1 turn")
+        elif (games[0].active_player == player2): print("Player 2 turn")
+        print(games[0].get_legal_moves())
+        move, score = games[0].active_player.get_move(games[0], games[0].get_legal_moves(), lambda : 2000)
+        print(move, score)
+        print(games[0].to_string())
+        games[0].apply_move(move)
+    """
+
+    winner, _, termination = games[0].play(time_limit=TIME_LIMIT)
+    if player1 == winner: print("Player 1 wins!", termination)
+    if player2 == winner: print("Player 2 wins!", termination)
+
+    """
     # play both games and tally the results
     for game in games:
-        # print("New game!")
         winner, _, termination = game.play(time_limit=TIME_LIMIT)
-
-        if player1.iterative:
-            depth += sum(player1.depthlist)/len(player1.depthlist)
-        if player2.iterative:
-            depth += sum(player2.depthlist)/len(player2.depthlist)
 
         if player1 == winner:
             num_wins[player1] += 1
@@ -98,15 +109,14 @@ def play_match(player1, player2, depth):
             num_wins[player2] += 1
 
             if termination == "timeout":
-                print("timeout!")
                 num_timeouts[player1] += 1
             else:
                 num_invalid_moves[player1] += 1
 
     if sum(num_timeouts.values()) != 0:
         warnings.warn(TIMEOUT_WARNING)
-
-    return num_wins[player1], num_wins[player2], depth
+    """
+    return num_wins[player1], num_wins[player2]
 
 
 def play_round(agents, num_matches):
@@ -120,18 +130,20 @@ def play_round(agents, num_matches):
     print("\nPlaying Matches:")
     print("----------")
 
+    s1, s2 = play_match(agents[1].player, agents[0
+    ].player)
+    return s1
+"""
     for idx, agent_2 in enumerate(agents[:-1]):
 
         counts = {agent_1.player: 0., agent_2.player: 0.}
         names = [agent_1.name, agent_2.name]
         print("  Match {}: {!s:^11} vs {!s:^11}".format(idx + 1, *names), end=' ')
 
-        depth = 0
-
         # Each player takes a turn going first
         for p1, p2 in itertools.permutations((agent_1.player, agent_2.player)):
             for _ in range(num_matches):
-                score_1, score_2, depth = play_match(p1, p2, depth)
+                score_1, score_2 = play_match(p1, p2)
                 counts[p1] += score_1
                 counts[p2] += score_2
                 total += score_1 + score_2
@@ -140,9 +152,8 @@ def play_round(agents, num_matches):
 
         print("\tResult: {} to {}".format(int(counts[agent_1.player]),
                                           int(counts[agent_2.player])))
-        print("Average depth: ", depth/(num_matches*4))
-
     return 100. * wins / total
+    """
 
 
 def main():
@@ -151,7 +162,7 @@ def main():
                   ("Open", open_move_score),
                   ("Improved", improved_score)]
     AB_ARGS = {"search_depth": 5, "method": 'alphabeta', "iterative": False}
-    MM_ARGS = {"search_depth": 3, "method": 'minimax', "iterative": False}
+    MM_ARGS = {"search_depth": 2, "method": 'minimax', "iterative": False}
     CUSTOM_ARGS = {"method": 'alphabeta', 'iterative': True}
 
     # Create a collection of CPU agents using fixed-depth minimax or alpha beta
@@ -173,8 +184,9 @@ def main():
     test_agents = [Agent(CustomPlayer(score_fn=improved_score, **CUSTOM_ARGS), "ID_Improved"),
                    Agent(CustomPlayer(score_fn=custom_score, **CUSTOM_ARGS), "Student")]
 
-    # test_agents = [Agent(CustomPlayer(score_fn=custom_score, **CUSTOM_ARGS), "Student")]
-
+    agents = test_agents
+    win_ratio = play_round(agents, NUM_MATCHES)
+"""
     print(DESCRIPTION)
     for agentUT in test_agents:
         print("")
@@ -182,13 +194,13 @@ def main():
         print("{:^25}".format("Evaluating: " + agentUT.name))
         print("*************************")
 
-        agents = mm_agents + ab_agents + [agentUT]
+        agents = [agentUT]
         win_ratio = play_round(agents, NUM_MATCHES)
 
         print("\n\nResults:")
         print("----------")
         print("{!s:<15}{:>10.2f}%".format(agentUT.name, win_ratio))
-
+"""
 
 if __name__ == "__main__":
     main()

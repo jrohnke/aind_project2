@@ -1,0 +1,58 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1404\cocoasubrtf470
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww5980\viewh16000\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Alpha Go paper notes\
+\
+- Go is too complicated to make an exhaustive search a feasible technique (250^150 possible move sequences)\
+-  historically, methods that improved performance significantly in other games are:\
+	- reduce search depth by approximating the value function for the subtree below a certain depth level\
+ 	- reduce search breadth by using a actions from a policy that is a probability distribution over possible moves, Monte Carlo rollouts\
+	- for example Monte Carlo tree search estimates the value of each state in a search tree by using a policy that improves over time as the tree grows larger and more accurate and children with higher values are selected.\
+	- beam search focussing on high-probability actions\
+	- amateur level play\
+- deep convolutional neural networks now achieved significantly better performance\
+- neurons in convolutional layers are used to create a representation of the game board state\
+- depth and breadth are reduced and value and policy networks are used to evaluate positions and sample actions\
+- train using supervised learning from expert human moves to quickly get good results.\
+- improve the result for the goal of winning games by using reinforcement learning with self-play games\
+\
+policy network\
+supervised learning, new techniques\
+- the policy network derived from supervised learning resulted in predicting the expert human player moves correctly 55.7% of the time. This is an improvement over other state-of-the-art results of 44.4%\
+\
+reinforcement learning\
+- same structure as the policy network from supervised learning\
+- play games between current policy network and a random previous iteration to avoid overfitting\
+- reward winning positions at the end of the game and penalise loosing ones\
+- win rate of 80% against the SL network\
+- win rate against leading search based program: 85%\
+\
+value network\
+- estimate a value function that predicts the outcome from a position\
+- similar structure to policy network but outputs one prediction, the likelihood that the current position will lead to a win\
+- just learning from complete game data leads to overfitting because successive positions are strongly correlated and the network just memorises the game outcome\
+- generated self-play data, RL network against itself\
+- significant improvement, much less overfitting observed\
+- error predicting the outcome is consistently lower than search-based methods\
+\
+searching\
+- combine policy and value networks in a MCTS algorithm\
+- use a terminated Monte Carlo simulation with a simple rollout policy and an evaluation function instead of a terminal state\
+- every edge of the tree stores an action value that depends on the evaluation of the value network and a prior probability\
+- many simulations are run and when leaf nodes are reached, they are evaluated with a mix of the value network and a fast Monte Carlo rollout\
+- at the end of every simulation all edges are updated with their value and how often they were visited\
+- once the search is complete, the most visited move is chosen\
+- initially moves with high prior probability are chosen but overtime those with high action value are preferred\
+\
+results\
+- SL policy performs better than the stronger RL policy, probably because human moves are more diverse and RL optimises for the single best move\
+- RL value function performs better than SL value function\
+- computationally intensive, AlphaGo uses asynchronous multi=threaded search on CPU and computation of policy and value networks on GPUs\
+- instead of handcrafted rollout policies, it uses general training methods for neural networks\
+- significantly better performance than all other Go programs, even when just using value networks without the rollout\
+- best result when combining networks and rollout scheme\
+- beat the European champion 5-0 in a formal match\
+- AlphaGo evaluates less positions than traditional programs but selects them more intelligently using policy networks and evaluates them more precisely using value networks and perhaps thus getting closer to the way humans play the game.}
