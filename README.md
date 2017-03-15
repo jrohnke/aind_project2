@@ -84,8 +84,8 @@ Based on these result, I ran another tournament (num_matches = 100) but modified
 |Heuristic \	#matches|	100|
 |---|---|
 Improved_ID|	74.68%|
-#moves_player - #moves_opp + late_game_length_move_chain|	74.46%|
-#moves_player - 2 * #moves_opp + late_game_length_move_chain|	76.00%|
+(#moves_player - #moves_opp) and Heuristic4|	74.46%|
+(#moves_player - 2 * #moves_opp) and Heuristic4|	76.00%|
 
 These results do not look as expected. The average search depth reached using the Improved_ID heuristic is ~7.1, which drops to ~6.7 when any of the other two are being used. It seems like the heuristics all have a similar performance, where a shallower search depth is balanced by a more accurate heuristic. The length of the tournament might not be enough to give a completely reliable order of the heuristics though. 
 The heuristic of my choice is **#moves_player - 2 * #moves_opp + late_game_length_move_chain**. It slightly outperforms the Improved_ID heuristic in most tests and delivers a fairly consistent performance.
