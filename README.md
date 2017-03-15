@@ -63,19 +63,19 @@ If this condition is fulfilled, it is safe to assume, that the players cannot in
 ## Tournament test
 I ran a few short tournaments to find a combination of heuristics that seem to give encouraging results. Using the heuristics above, I used the following combinations for the three short (num_matches = 5) and two long tournaments (num_matches = 100):
 - Just Heuristic1
-- Heuristic1 and Heuristic4 (after 1/4 of the board has been filled)
-- Heuristic1 + Heuristic2 and Heuristic4 (after 1/4 of the board has been filled)
-- Heuristic 1 - Heuristic3 and Heuristic4 (after 1/4 of the board has been filled)
+- (Heuristic1) and Heuristic4 (after 1/4 of the board has been filled)
+- (Heuristic1 + Heuristic2) and Heuristic4 (after 1/4 of the board has been filled)
+- (Heuristic1 - Heuristic3) and Heuristic4 (after 1/4 of the board has been filled)
 
 These are the results:
 
 |Heuristic \	#matches|	5|	5|	5|	100|	100|	Combined |
 |---|---|---|---|---|---|---|
 Improved_ID|	72.86%|	70.00%|	77.14%|	76.50%|	76.04%|	76.07% |
-#moves_player - 2 * #moves_opp|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45% |
-Heuristic 1 + late_game_length_move_chain|	71.43%|	80.71%|	77.14%|	76.07%|	76.89%|	76.48% |
-Heuristic 2 + (player_location - opp_location)|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43% |
-Heuristic 2 + (player_location - board_center)|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06% |
+Heuristic1|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45% |
+(Heuristic1) and Heuristic4|	71.43%|	80.71%|	77.14%|	76.07%|	76.89%|	76.48% |
+(Heuristic1 + Heuristic2) and Heuristic4|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43% |
+(Heuristic1 - Heuristic3) and Heuristic4|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06% |
 
 It looks like contradictory to the results from the initial short tournaments, putting a stronger emphasis on restricting the opponents movement does not improve the results compared to Improved_ID. Adding the late-game heuristic does improve the results, which is as expected. In later stages of the game, the board movement is more restricted and the extra computational effort does not reduce the maximum search depth as much as it would've done in early stages of the game. Adding the extra constraints about board positioning does not seem to change the results much and even has a slight negative effect.
 
