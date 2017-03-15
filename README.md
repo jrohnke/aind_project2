@@ -7,13 +7,13 @@ In this project I implemented the minimax and alpha-beta algorithm and a custom 
 
 To test the functionality of the minimax and alpha-beta algorithm, I started by implementing an extremely simple heuristic, the **#moves** available to the player. Since this heuristic points in the right direction but is overly simplified (e.g. it completely ignores the opponent), I initially modified it to take the #moves available to the opponent into account (**#moves - #opponent_moves**). This way the algorithms maximise the number of moves available to the player and minimise the moves available to the opponent. I tried to modify this further and put a stronger emphasis on restricting the opponents ability to move, leading me to the first of my final set of implemented heuristic:
 
-**Heuristic1 = #player_moves - 2*#opponent_moves**
+**Heuristic1 = #player_moves - 2 * #opponent_moves**
 <pre>player_moves =  len(game.get_legal_moves(player)) / (game.width * game.height)
 opp_moves = len(game.get_legal_moves(game.get_opponent(player))) / (game.width * game.height)
 heuristic1 = player_moves - 2 * opp_moves
 </pre>
 
-Next, I tried to penalise certain areas of the board to achieve the same goal of maximising the freedom of movement of the player. The positions on the board where the movement is restricted the most (or where it is easiest to restrict the movement in the future) is close to the border of the board, and close to the opponent. This lead me to the next two heuristic that will be used in the final set:
+Next, I tried to penalise certain areas of the board to achieve the same goal of maximising the freedom of movement of the player. The positions on the board where the movement is restricted the most (or where it is easiest to restrict the movement in the future) is close to the border of the board, and close to the opponent. This lead me to the next two heuristics that will be used in the final set:
 
 **Heuristic2 = player_location - opponent_location**
 <pre> heuristic2 = sum([abs(a-b) for a,b in zip(game.get_player_location(player), game.get_player_location(game.get_opponent(player)))]) / (game.width * game.height) </pre>
@@ -24,9 +24,9 @@ Next, I tried to penalise certain areas of the board to achieve the same goal of
 As can be seen, I normalised all of these heuristics by the size of the board. This scales them to a similar range and generally makes it easier to choose and vary the individual weights when combining different heuristics.
 
 
-The next step to look at a more complicated heuristics that is computationally more demanding but should be more accurate. It is not feasible to use this throughout the whole game, as it would restrict the search depth in the early stages of the game too much. I ended up using this late-game heuristics when less than 3/4 of the game board is still open.
+As a next step, I looked at a more complicated heuristic that is computationally more demanding but should be more accurate. It is not feasible to use this throughout the whole game, as it would restrict the search depth in the early stages of the game too much. I ended up using this late-game heuristics when less than 3/4 of the game board is still open.
 
-The first part of this heuristic is to check if the game board is divided into two parts. To keep it easy to compute, I decided to restrict this to a simple chec: Are there two adjacent rows or columns that are completely blocked and are the two players on opposite sides of the wall.
+The first part of this heuristic is to check if the game board is divided into two parts. To keep it easy to compute, I decided to restrict this to a simple check: Are there two adjacent rows or columns that are completely blocked and are the two players on opposite sides of the wall?
 <pre># check if two adjacent rows or columns are completely blocked off
     rows, cols = zip(*blanks)
     rowcount = [rows.count(x) for x in range(game.height)]
@@ -69,23 +69,23 @@ I ran a few short tournaments to find a combination of heuristics that seem to g
 
 These are the results:
 
-|Heuristic \	#matches|	5|	5|	5|	100|	100|	Combined
-|---|
-Improved_ID|	72.86%|	70.00%|	77.14%|	76.50%|	76.04%|	76.07%
-#moves_player - 2 * #moves_opp|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45%
-Heuristic 1 + late_game_length_move_chain|	71.43%|	80.71%|	77.14%|	76.07%|	76.89%|	76.48%
-Heuristic 2 + (player_location - opp_location)|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43%
-Heuristic 2 + (player_location - board_center)|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06%
+|Heuristic \	#matches|	5|	5|	5|	100|	100|	Combined |
+|---|---|---|---|---|---|---|
+Improved_ID|	72.86%|	70.00%|	77.14%|	76.50%|	76.04%|	76.07% |
+#moves_player - 2 * #moves_opp|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45% |
+Heuristic 1 + late_game_length_move_chain|	71.43%|	80.71%|	77.14%|	76.07%|	76.89%|	76.48% |
+Heuristic 2 + (player_location - opp_location)|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43% |
+Heuristic 2 + (player_location - board_center)|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06% |
 
 It looks like contradictory to the results from the initial short tournaments, putting a stronger emphasis on restricting the opponents movement does not improve the results compared to Improved_ID. Adding the late-game heuristic does improve the results, which is as expected. In later stages of the game, the board movement is more restricted and the extra computational effort does not reduce the maximum search depth as much as it would've done in early stages of the game. Adding the extra constraints about board positioning does not seem to change the results much and even has a slight negative effect.
 
 Based on these result, I ran another tournament (num_matches = 100) but modified the simple heuristic, so that it is identical to the Improved_ID.
 
-|Heuristic \	#matches|	100
-|---|
-Improved_ID|	74.68%
-#moves_player - #moves_opp + late_game_length_move_chain|	74.46%
-#moves_player - 2 * #moves_opp + late_game_length_move_chain|	76.00%
+|Heuristic \	#matches|	100|
+|---|---|
+Improved_ID|	74.68%|
+#moves_player - #moves_opp + late_game_length_move_chain|	74.46%|
+#moves_player - 2 * #moves_opp + late_game_length_move_chain|	76.00%|
 
 These results do not look as expected. The average search depth reached using the Improved_ID heuristic is ~7.1, which drops to ~6.7 when any of the other two are being used. It seems like the heuristics all have a similar performance, where a shallower search depth is balanced by a more accurate heuristic. The length of the tournament might not be enough to give a completely reliable order of the heuristics though. 
 The heuristic of my choice is **#moves_player - 2 * #moves_opp + late_game_length_move_chain**. It slightly outperforms the Improved_ID heuristic in most tests and delivers a fairly consistent performance.
