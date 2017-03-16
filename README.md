@@ -77,7 +77,7 @@ Heuristic1|	75.00%|	75.71%|	75.71%|	74.89%|	76.00%|	75.45% |
 (Heuristic1 + Heuristic2) and Heuristic4|	77.86%|	72.86%|	72.14%|	75.75%|	77.43%|	76.43% |
 (Heuristic1 - Heuristic3) and Heuristic4|	78.57%|	75.71%|	76.43%|	75.39%|	74.46%|	75.06% |
 
-![alt tag](pictures/heuristics.png)
+<img src="pictures/heuristics.png" width="500">
 
 
 It looks like contradictory to the results from the initial short tournaments, putting a stronger emphasis on restricting the opponents movement does not improve the results compared to Improved_ID. Adding the late-game heuristic does improve the results, which is as expected. In later stages of the game, the board movement is more restricted and the extra computational effort does not reduce the maximum search depth as much as it would've done in early stages of the game. Adding the extra constraints about board positioning does not seem to change the results much and even has a slight negative effect.
