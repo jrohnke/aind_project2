@@ -92,7 +92,7 @@ Improved_ID|	74.68%|
 
 These results are interesting. Previous tests suggested that putting more emphasis on restricting the opponents movement does not improve the results when only the simple heuristic is used. When combined with the late game heuristic, it does seem to have a positive effect though. Restricting the movement of the opponent early on seems to be beneficial for putting the opponent into a situation where he will end up on the smaller side of a wall.
 
-The average search depth reached using the Improved_ID heuristic is ~7.7, which drops to ~7.2 when any of the other two are being used. The development of the average search depth with moves throughout the game shows that both heuristics have an increased search depth during later stages of the game, due to the fact that moves and therefore every level of the search tree are more restricted. The search depth of the simple and quick to compute Improved_ID is consistently higher.
+Comparing **Improved_ID** and **(#moves_player - 2 * #moves_opp) and Heuristic4** closer, shows that the average search depth reached using Improved_ID is ~7.7, and drops to ~7.2 when the other one is being used. The average number of moves played is ~16.5 for the Improved_ID, compared to ~15.5 for the other one. The development of the average search depth with moves throughout the game shows that both heuristics have an increased search depth during later stages of the game, due to the fact that the moves and therefore every level of the search tree are more restricted. The search depth of the simple and quick to compute Improved_ID is consistently higher.
 
 <img src="pictures/depth.png" width="1000">
 
