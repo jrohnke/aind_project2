@@ -91,13 +91,14 @@ Improved_ID|	74.68%|
 (#moves_player - 2 * #moves_opp) and Heuristic4|	76.00%|
 
 These results are interesting. Previous tests suggested that putting more emphasis on restricting the opponents movement does not improve the results when only the simple heuristic is used. When combined with the late game heuristic, it does seem to have a positive effect though. Restricting the movement of the opponent early on seems to be beneficial for putting the opponent into a situation where he will end up on the smaller side of a wall.
-The average search depth reached using the Improved_ID heuristic is ~7.7, which drops to ~7.2 when any of the other two are being used. The development of the average search_depth with moves throughout the game shows that both heuristics have an inreased search depth during later stages of the game. The search depth of the simple and quick to compute Improved_ID is always higher.
 
-<img src="pictures/depth.png" width="500">
+The average search depth reached using the Improved_ID heuristic is ~7.7, which drops to ~7.2 when any of the other two are being used. The development of the average search depth with moves throughout the game shows that both heuristics have an increased search depth during later stages of the game, due to the fact that moves and therefore every level of the search tree are more restricted. The search depth of the simple and quick to compute Improved_ID is consistently higher.
+
+<img src="pictures/depth.png" width="1000">
 
 It seems like the heuristics all perform similarly well. Looking more moves ahead seems to outweigh or at least balance the drawback of having a fairly simply heuristic. The length of the tournament might not be enough to give an entirely reliable order of the heuristics. 
 
-The heuristic of my choice is **(#moves_player - 2 * #moves_opp)** throughout the game combined with **length_move_chain** in the later stages of the game. It slightly outperforms the Improved_ID heuristic in most tests and delivers a fairly consistent performance.
+The heuristic of my choice is **(#moves_player - 2 * #moves_opp)** throughout the game combined with **length_move_chain** in the later stages of the game. It slightly outperforms the Improved_ID heuristic in most tests and delivers a fairly consistent performance. The benchmark heuristic is very quick to compute and has a very high search depth and is therefore hard to beat. My heuristic of choice sacrifices some of that depth to include an additional check in later stages of the game which can bring the game to a quicker conclusion. It still remains fairly simple to compute and I think trading some of the simplicity for the additional check is worth it.
 
 
 ## Additional Sources:
