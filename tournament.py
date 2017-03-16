@@ -33,7 +33,7 @@ from sample_players import improved_score
 from game_agent import CustomPlayer
 from game_agent import custom_score
 
-NUM_MATCHES = 5  # number of matches against each opponent
+NUM_MATCHES = 50  # number of matches against each opponent
 TIME_LIMIT = 150  # number of milliseconds before timeout
 
 TIMEOUT_WARNING = "One or more agents lost a match this round due to " + \
@@ -57,7 +57,7 @@ same opponents.
 Agent = namedtuple("Agent", ["player", "name"])
 
 
-def play_match(player1, player2, depth):
+def play_match(player1, player2, depth, movedepth):
     """
     Play a "fair" set of matches between two agents by playing two games
     between the players, forcing each agent to play from randomly selected
@@ -78,12 +78,17 @@ def play_match(player1, player2, depth):
     # play both games and tally the results
     for game in games:
         # print("New game!")
+        if player1.iterative: player1.depthlist = []
+        if player2.iterative: player2.depthlist = []
+
         winner, _, termination = game.play(time_limit=TIME_LIMIT)
 
         if player1.iterative:
             depth += sum(player1.depthlist)/len(player1.depthlist)
+            movedepth = [x+y for x,y in zip(movedepth,player1.depthlist)]
         if player2.iterative:
             depth += sum(player2.depthlist)/len(player2.depthlist)
+            movedepth = [x+y for x,y in zip(movedepth,player2.depthlist)]
 
         if player1 == winner:
             num_wins[player1] += 1
@@ -106,7 +111,7 @@ def play_match(player1, player2, depth):
     if sum(num_timeouts.values()) != 0:
         warnings.warn(TIMEOUT_WARNING)
 
-    return num_wins[player1], num_wins[player2], depth
+    return num_wins[player1], num_wins[player2], depth, movedepth
 
 
 def play_round(agents, num_matches):
@@ -127,11 +132,12 @@ def play_round(agents, num_matches):
         print("  Match {}: {!s:^11} vs {!s:^11}".format(idx + 1, *names), end=' ')
 
         depth = 0
+        movedepth = [0]*100
 
         # Each player takes a turn going first
         for p1, p2 in itertools.permutations((agent_1.player, agent_2.player)):
             for _ in range(num_matches):
-                score_1, score_2, depth = play_match(p1, p2, depth)
+                score_1, score_2, depth, movedepth = play_match(p1, p2, depth, movedepth)
                 counts[p1] += score_1
                 counts[p2] += score_2
                 total += score_1 + score_2
@@ -141,6 +147,7 @@ def play_round(agents, num_matches):
         print("\tResult: {} to {}".format(int(counts[agent_1.player]),
                                           int(counts[agent_2.player])))
         print("Average depth: ", depth/(num_matches*4))
+        print("Average depth: ", [x/(num_matches*4) for x in movedepth])
 
     return 100. * wins / total
 

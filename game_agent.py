@@ -416,7 +416,6 @@ class CustomPlayer:
             for move in legal_moves:
                 # pick one move and evaluate it
                 new_game = game.forecast_move(move)
-                assert(new_game.to_string() != game.to_string())
                 score,_ = self.minimax(new_game, depth-1, False)
                 # if the score is better than the current best, update best score
                 if score > best_score:
@@ -431,7 +430,6 @@ class CustomPlayer:
             for move in legal_moves:
                 # pick one move and evaluate it
                 new_game = game.forecast_move(move)
-                assert(new_game.to_string() != game.to_string())
                 score,_ = self.minimax(new_game, depth-1, True)
                 # if the score is better than the current best, update best score
                 if score < best_score:
@@ -508,7 +506,6 @@ class CustomPlayer:
             for move in legal_moves:
                 # pick one move and evaluate it
                 new_game = game.forecast_move(move)
-                assert(new_game.to_string() != game.to_string())
                 score,_ = self.alphabeta(new_game, depth-1, alpha, beta, False)
                 # if the score is better than the current best, update best score
                 if score > best_score:
@@ -528,7 +525,6 @@ class CustomPlayer:
             for move in legal_moves:
                 # pick one move and evaluate it
                 new_game = game.forecast_move(move)
-                assert(new_game.to_string() != game.to_string())
                 score,_ = self.alphabeta(new_game, depth-1, alpha, beta, True)
                 # if the score is better than the current best, update best score
                 if score < best_score:
